@@ -297,6 +297,8 @@ void GripperPrivate::HandleAttach()
     return;
   }
 
+  gzwarn << "Handling gripper attach" << std::endl;
+
   std::map<std::string, physics::CollisionPtr> cc;
   std::map<std::string, int> contactCounts;
   std::map<std::string, int>::iterator iter;
@@ -350,11 +352,14 @@ void GripperPrivate::HandleAttach()
         if (var < 1e-5 && max < 1e-5)
         {
           this->attached = true;
+          gzwarn << iter->first << " has " << iter->second << " contacts, gripper attached. dvar: " << var << ", dmax: " << max << std::endl;
 
           this->fixedJoint->Load(this->palmLink,
               cc[iter->first]->GetLink(), ignition::math::Pose3d());
           this->fixedJoint->Init();
         }
+        else
+          gzwarn << iter->first << " has " << iter->second << " contacts, gripper not attached. dvar: " << var << ", dmax: " << max << std::endl;
 
         this->diffIndex = (this->diffIndex+1) % 10;
       }
@@ -368,6 +373,7 @@ void GripperPrivate::HandleDetach()
 {
   this->attached = false;
   this->fixedJoint->Detach();
+  gzwarn << "Gripper detached" << std::endl;
 }
 
 /////////////////////////////////////////////////
