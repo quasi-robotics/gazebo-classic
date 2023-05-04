@@ -334,6 +334,14 @@ void World::Load(sdf::ElementPtr _sdf)
         shadowCasterRenderBackFacesService << "]" << std::endl;
   }
 
+  std::string materialShininessService("/shininess");
+  if (!this->dataPtr->ignNode.Advertise(materialShininessService,
+      &World::MaterialShininessService, this))
+  {
+    gzerr << "Error advertising service ["
+          << materialShininessService << "]" << std::endl;
+  }
+
   // This should come before loading of entities
   sdf::ElementPtr physicsElem = this->dataPtr->sdf->GetElement("physics");
 
@@ -385,8 +393,17 @@ void World::Load(sdf::ElementPtr _sdf)
       surfaceType, latitude, longitude, elevation, heading));
   }
 
+
   if (this->dataPtr->sphericalCoordinates == nullptr)
     gzthrow("Unable to create spherical coordinates data structure\n");
+
+  std::string sphericalCoordinatesSurfaceService("/spherical_coordinates_surface_type");
+  if (!this->dataPtr->ignNode.Advertise(sphericalCoordinatesSurfaceService,
+      &World::SphericalCoordinatesSurfaceService, this))
+  {
+    gzerr << "Error advertising service [" <<
+        sphericalCoordinatesSurfaceService << "]" << std::endl;
+  }
 
   this->dataPtr->rootElement.reset(new Base(BasePtr()));
   this->dataPtr->rootElement->SetName(this->Name());
@@ -3432,8 +3449,58 @@ bool World::ShadowCasterMaterialNameService(ignition::msgs::StringMsg &_res)
 }
 
 //////////////////////////////////////////////////
+bool World::SphericalCoordinatesSurfaceService(ignition::msgs::StringMsg &_res)
+{
+  if (this->dataPtr->sphericalCoordinates != nullptr)
+  {
+    if (this->dataPtr->sphericalCoordinates->GetSurfaceType()
+        == common::SphericalCoordinates::MOON_SCS)
+    {
+      _res.set_data("MOON_SCS");
+      return true;
+    }
+    if (this->dataPtr->sphericalCoordinates->GetSurfaceType()
+        == common::SphericalCoordinates::EARTH_WGS84)
+    {
+      _res.set_data("EARTH_WGS84");
+      return true;
+    }
+  }
+  return false;
+}
+
+//////////////////////////////////////////////////
 bool World::ShadowCasterRenderBackFacesService(ignition::msgs::Boolean &_res)
 {
   _res.set_data(this->dataPtr->shadowCasterRenderBackFaces);
+  return true;
+}
+
+//////////////////////////////////////////////////
+void World::SetVisualShininess(const std::string &_scopedName,
+                               double _shininess)
+{
+  std::lock_guard<std::mutex> lock(this->dataPtr->materialShininessMutex);
+  this->dataPtr->materialShininessMap[_scopedName] = _shininess;
+}
+
+//////////////////////////////////////////////////
+double World::ShininessByScopedName(const std::string &_scopedName) const
+{
+  std::lock_guard<std::mutex> lock(this->dataPtr->materialShininessMutex);
+  if (this->dataPtr->materialShininessMap.find(_scopedName) !=
+      this->dataPtr->materialShininessMap.end())
+  {
+    return this->dataPtr->materialShininessMap.at(_scopedName);
+  }
+  return 0.0;
+}
+
+//////////////////////////////////////////////////
+bool World::MaterialShininessService(
+    const ignition::msgs::StringMsg &_req, msgs::Any &_res)
+{
+  _res.set_type(msgs::Any::DOUBLE);
+  _res.set_double_value(this->ShininessByScopedName(_req.data()));
   return true;
 }

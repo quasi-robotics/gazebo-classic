@@ -2,7 +2,7 @@ include (${gazebo_cmake_dir}/GazeboUtils.cmake)
 include (CheckCXXSourceCompiles)
 
 include (${gazebo_cmake_dir}/FindOS.cmake)
-include (FindPkgConfig)
+find_package(PkgConfig)
 include (${gazebo_cmake_dir}/FindFreeimage.cmake)
 
 execute_process(COMMAND ${PKG_CONFIG_EXECUTABLE} --modversion protobuf
@@ -180,18 +180,19 @@ if (PKG_CONFIG_FOUND)
 
   # Use system installation on UNIX and Apple, and internal copy on Windows
   if (UNIX OR APPLE)
-    message (STATUS "Using system tinyxml.")
-    set (USE_EXTERNAL_TINYXML True)
+    set (USE_EXTERNAL_TINYXML_DEFAULT_VALUE ON)
   elseif(WIN32)
-    message (STATUS "Using internal tinyxml.")
-    set (USE_EXTERNAL_TINYXML False)
-    add_definitions(-DTIXML_USE_STL)
+    set (USE_EXTERNAL_TINYXML_DEFAULT_VALUE OFF)
   else()
     message (STATUS "Unknown platform, unable to configure tinyxml.")
     BUILD_ERROR("Unknown platform")
   endif()
-
+  
+  option(USE_EXTERNAL_TINYXML "Use an externally provided tinyxml library" ${USE_EXTERNAL_TINYXML_DEFAULT_VALUE})
+  mark_as_advanced(USE_EXTERNAL_TINYXML)
+  
   if (USE_EXTERNAL_TINYXML)
+    message (STATUS "Using system tinyxml.")
     pkg_check_modules(tinyxml tinyxml)
     if (NOT tinyxml_FOUND)
         find_path (tinyxml_INCLUDE_DIRS tinyxml.h ${tinyxml_INCLUDE_DIRS} ENV CPATH)
@@ -212,6 +213,8 @@ if (PKG_CONFIG_FOUND)
       BUILD_ERROR("Missing: tinyxml")
     endif()
   else()
+    message (STATUS "Using internal tinyxml.")
+    add_definitions(-DTIXML_USE_STL)
     # Needed in WIN32 since in UNIX the flag is added in the code installed
     message (STATUS "Skipping search for tinyxml")
     set (tinyxml_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/deps/win/tinyxml")
@@ -226,17 +229,19 @@ if (PKG_CONFIG_FOUND)
 
   # Use system installation on UNIX and Apple, and internal copy on Windows
   if (UNIX OR APPLE)
-    message (STATUS "Using system tinyxml2.")
-    set (USE_EXTERNAL_TINYXML2 True)
+    set (USE_EXTERNAL_TINYXML2_DEFAULT_VALUE ON)
   elseif(WIN32)
-    message (STATUS "Using internal tinyxml2.")
-    set (USE_EXTERNAL_TINYXML2 False)
+    set (USE_EXTERNAL_TINYXML2_DEFAULT_VALUE OFF)
   else()
     message (STATUS "Unknown platform, unable to configure tinyxml2.")
     BUILD_ERROR("Unknown platform")
   endif()
+  
+  option(USE_EXTERNAL_TINYXML2 "Use an externally provided tinyxml2 library" ${USE_EXTERNAL_TINYXML2_DEFAULT_VALUE})
+  mark_as_advanced(USE_EXTERNAL_TINYXML2)
 
   if (USE_EXTERNAL_TINYXML2)
+    message (STATUS "Using system tinyxml2.")
     pkg_check_modules(tinyxml2 tinyxml2)
     if (NOT tinyxml2_FOUND)
         find_path (tinyxml2_INCLUDE_DIRS tinyxml2.h ${tinyxml2_INCLUDE_DIRS} ENV CPATH)
@@ -264,6 +269,7 @@ if (PKG_CONFIG_FOUND)
       link_directories(${tinyxml2_LIBRARY_DIRS})
     endif()
   else()
+    message (STATUS "Using internal tinyxml2.")
     # Needed in WIN32 since in UNIX the flag is added in the code installed
     message (STATUS "Skipping search for tinyxml2")
     set (tinyxml2_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/deps/tinyxml2")
@@ -608,7 +614,7 @@ endif ()
 
 ########################################
 # Find SDFormat
-set(SDF_MIN_REQUIRED_VERSION 9.3)
+set(SDF_MIN_REQUIRED_VERSION 9.8)
 find_package(sdformat9 ${SDF_MIN_REQUIRED_VERSION} REQUIRED)
 if (sdformat9_FOUND)
   message (STATUS "Looking for SDFormat9  - found")

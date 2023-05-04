@@ -1,5 +1,71 @@
 ## Gazebo 11
 
+## Gazebo 11.12.0 (2022-09-14)
+
+1. BulletLink: add and set force and torque
+    * [Pull request #3255](https://github.com/osrf/gazebo/pull/3255)
+
+1. Camera: expose intrinsics parameters
+    * [Pull request #3245](https://github.com/osrf/gazebo/pull/3245)
+
+1. Add missing header includes
+    * [Pull request #3227](https://github.com/osrf/gazebo/pull/3227)
+
+1. Permit users to override `USE_EXTERNAL_TINYXML2` and `USE_EXTERNAL_TINYXML`
+    * [Pull request #3254](https://github.com/osrf/gazebo/pull/3254)
+
+1. CustomPSSMShadowCamera: support custom projection matrix
+    * [Pull request #3249](https://github.com/osrf/gazebo/pull/3249)
+
+1. Update Readme and add gazebo logo
+    * [Pull request #3233](https://github.com/osrf/gazebo/pull/3233)
+    * [Pull request #3226](https://github.com/osrf/gazebo/pull/3226)
+
+1. Wheel plowing approximation in ODEPhysics
+    * [Pull request #3164](https://github.com/osrf/gazebo/pull/3164)
+
+1. LensFlare: parameterize number of occlusion steps
+    * [Pull request #3234](https://github.com/osrf/gazebo/pull/3234)
+    * [Pull request #3241](https://github.com/osrf/gazebo/pull/3241)
+
+1. Support shininess value for each Visual in a Model
+    * [Pull request #3235](https://github.com/osrf/gazebo/pull/3235)
+
+1. Fix shininess and add tests
+    * [Pull request #3231](https://github.com/osrf/gazebo/pull/3231)
+
+## Gazebo 11.11.0 (2022-05-25)
+
+1. Convert `OGRE_RESOURCE_PATH` with `TO_CMAKE_PATH`
+    * [Pull request #3165](https://github.com/osrf/gazebo/pull/3165)
+    * A contrubition from Silvio Traversaro
+
+1. Fix compatibility with FFmpeg 5.0
+    * [Pull request #3195](https://github.com/osrf/gazebo/pull/3195)
+    * A contrubition from Silvio Traversaro
+
+1. Get/Set friction coefficients of wheels
+    * [Pull request #3219](https://github.com/osrf/gazebo/pull/3219)
+
+1. Support `<anti_aliasing>` element when setting up camera
+    * [Pull request #3201](https://github.com/osrf/gazebo/pull/3201)
+
+1. Added shininess to models
+    * [Pull request #3213](https://github.com/osrf/gazebo/pull/3213)
+    * [Pull request #3223](https://github.com/osrf/gazebo/pull/3223)
+
+1. Fix missing namespace for string
+    * [Pull request #3211](https://github.com/osrf/gazebo/pull/3211)
+
+1. Fix typo in TBB target check in `gazebo-config.cmake.in`
+    * [Pull request #3207](https://github.com/osrf/gazebo/pull/3207)
+
+1. Separate cache files for each heightmap LOD
+    * [Pull request #3200](https://github.com/osrf/gazebo/pull/3200)
+
+1. Parse `ode_quiet` physics parameter from SDFormat
+    * [Pull request #3194](https://github.com/osrf/gazebo/pull/3194)
+
 ## Gazebo 11.10.2 (2022-03-19)
 
 1. Support plotting for entities with / in the name
@@ -5051,3 +5117,4 @@ compilation on Windows.
 *  Numerous bug fixes
 *  APT repository hosted at [http://osrfoundation.org OSRF]
 *  Improved process control prevents zombie processes
+

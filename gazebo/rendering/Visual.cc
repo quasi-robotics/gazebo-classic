@@ -19,7 +19,17 @@
 #include <boost/lexical_cast.hpp>
 
 #include <ignition/common/Profiler.hh>
+#include <ignition/math/AxisAlignedBox.hh>
+#include <ignition/math/Color.hh>
 #include <ignition/math/Helpers.hh>
+#include <ignition/math/Matrix4.hh>
+#include <ignition/math/Pose3.hh>
+#include <ignition/math/Quaternion.hh>
+#include <ignition/math/Vector2.hh>
+#include <ignition/math/Vector3.hh>
+#include <ignition/math/Vector4.hh>
+#include <ignition/transport/Node.hh>
+#include <ignition/transport/TopicUtils.hh>
 
 #include "gazebo/msgs/msgs.hh"
 
@@ -329,7 +339,7 @@ void Visual::Init()
 }
 
 //////////////////////////////////////////////////
-void Visual::LoadFromMsg(const boost::shared_ptr< msgs::Visual const> &_msg)
+void Visual::LoadFromMsg(const boost::shared_ptr<msgs::Visual const> &_msg)
 {
   this->dataPtr->sdf = msgs::VisualToSDF(*_msg.get());
   this->Load();
@@ -346,6 +356,63 @@ void Visual::Load(sdf::ElementPtr _sdf)
 //////////////////////////////////////////////////
 void Visual::Load()
 {
+  if (this->dataPtr->sdf->HasElement("material"))
+  {
+    // Get shininess value from physics::World
+    ignition::transport::Node node;
+    msgs::Any rep;
+
+    const std::string visualName = this->Name();
+
+    const std::string serviceName = "/shininess";
+
+    const std::string validServiceName =
+        ignition::transport::TopicUtils::AsValidTopic(serviceName);
+
+    bool tryServiceCall = true;
+    if (validServiceName.empty())
+    {
+        gzerr << "Service name [" << serviceName << "] not valid" << std::endl;
+        tryServiceCall = false;
+    }
+
+    {
+      std::vector<ignition::transport::ServicePublisher> publishers;
+      if (!node.ServiceInfo(validServiceName, publishers))
+      {
+        gzerr << "Service name [" << validServiceName << "] not advertised, "
+              << "not attempting to load shininess for visual with name ["
+              << this->Name() << "]."
+              << std::endl;
+        tryServiceCall = false;
+      }
+    }
+
+    if (tryServiceCall)
+    {
+      ignition::msgs::StringMsg req;
+      req.set_data(visualName);
+
+      bool result;
+      unsigned int timeout = 5000;
+      bool executed = node.Request(validServiceName, req, timeout, rep, result);
+
+      if (executed)
+      {
+        if (result)
+          this->dataPtr->shininess = rep.double_value();
+        else
+          gzerr << "Service call [" << validServiceName << "] failed"
+                << std::endl;
+      }
+      else
+      {
+        gzerr << "Service call [" << validServiceName << "] timed out"
+              << std::endl;
+      }
+    }
+  }
+
   std::ostringstream stream;
   ignition::math::Pose3d pose;
   Ogre::MovableObject *obj = nullptr;
@@ -1432,6 +1499,7 @@ void Visual::SetSpecular(const ignition::math::Color &_color,
         {
           pass = technique->getPass(passCount);
           pass->setSpecular(Conversions::Convert(_color));
+          pass->setShininess(this->dataPtr->shininess);
         }
       }
     }
@@ -1528,6 +1596,12 @@ ignition::math::Color Visual::Specular() const
 ignition::math::Color Visual::Emissive() const
 {
   return this->dataPtr->emissive;
+}
+
+/////////////////////////////////////////////////
+double Visual::Shininess() const
+{
+  return this->dataPtr->shininess;
 }
 
 //////////////////////////////////////////////////
@@ -2106,8 +2180,11 @@ void Visual::SetRibbonTrail(bool _value,
 //////////////////////////////////////////////////
 DynamicLines *Visual::CreateDynamicLine(RenderOpType _type)
 {
-  this->dataPtr->preRenderConnection = event::Events::ConnectPreRender(
-      boost::bind(&Visual::Update, this));
+  if (!this->dataPtr->preRenderConnection)
+  {
+    this->dataPtr->preRenderConnection = event::Events::ConnectPreRender(
+        boost::bind(&Visual::Update, this));
+  }
 
   DynamicLines *line = new DynamicLines(_type);
   this->dataPtr->lines.push_back(line);

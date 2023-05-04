@@ -25,9 +25,8 @@ jobs:
 
     - uses: conda-incubator/setup-miniconda@v2
       with:
-        mamba-version: "*"
-        channels: conda-forge
-        channel-priority: true
+        miniforge-variant: Mambaforge
+        miniforge-version: latest
 
     - name: Dependencies
       shell: bash -l {0}
@@ -37,7 +36,7 @@ jobs:
         # Compilation related dependencies
         mamba install cmake compilers make ninja pkg-config
         # Actual dependencies
-        mamba install libprotobuf libsdformat libignition-cmake2 libignition-math6 libignition-transport8 libignition-common3 libignition-fuel-tools4 qt=5.12.9=*_4 ogre=1.10 freeimage curl tbb-devel qwt tinyxml2 libccd boost-cpp libcurl tinyxml bzip2 zlib ffmpeg graphviz libgdal libusb bullet-cpp dartsim simbody hdf5 openal-soft glib gts
+        mamba install libprotobuf libsdformat libignition-cmake2 libignition-math6 libignition-transport8 libignition-common3 libignition-fuel-tools4 qt-main ogre=1.10 freeimage curl tbb-devel qwt tinyxml2 libccd-double boost-cpp libcurl tinyxml bzip2 zlib ffmpeg graphviz libgdal libusb bullet-cpp simbody hdf5 openal-soft glib gts dartsim
 
     - name: Linux-only Dependencies [Linux]
       if: contains(matrix.os, 'ubuntu')
