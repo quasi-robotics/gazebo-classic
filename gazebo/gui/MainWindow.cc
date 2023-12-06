@@ -18,6 +18,7 @@
 #include <functional>
 
 #include <ignition/math/Pose3.hh>
+#include <ignition/transport/Node.hh>
 #include <sdf/sdf.hh>
 #include <boost/algorithm/string.hpp>
 
@@ -27,6 +28,7 @@
 #include "gazebo/common/Console.hh"
 #include "gazebo/common/Events.hh"
 #include "gazebo/common/Exception.hh"
+#include "gazebo/common/CommonIface.hh"
 
 #include "gazebo/msgs/msgs.hh"
 
@@ -361,8 +363,19 @@ void MainWindow::Init()
                                             "/gazebo/world/modify",
                                             &MainWindow::OnWorldModify, this);
 
-  this->dataPtr->requestMsg = msgs::CreateRequest("scene_info");
-  this->dataPtr->requestPub->Publish(*this->dataPtr->requestMsg);
+  // Get scene info from physics::World with ignition transport service
+  ignition::transport::Node node;
+  const std::string serviceName = "/scene_info";
+  std::vector<ignition::transport::ServicePublisher> publishers;
+  if (!node.ServiceInfo(serviceName, publishers) ||
+      !node.Request(serviceName, &MainWindow::OnSceneInfo, this))
+  {
+    gzwarn << "Ignition transport [" << serviceName << "] service call failed,"
+           << " falling back to gazebo transport [scene_info] request."
+           << std::endl;
+    this->dataPtr->requestMsg = msgs::CreateRequest("scene_info");
+    this->dataPtr->requestPub->Publish(*this->dataPtr->requestMsg);
+  }
 
   gui::Events::mainWindowReady();
 }
@@ -463,10 +476,10 @@ void MainWindow::Open()
 /////////////////////////////////////////////////
 void MainWindow::SaveINI()
 {
-  char *home = getenv("HOME");
+  char *home = getenv(HOMEDIR);
   if (!home)
   {
-    gzerr << "HOME environment variable not found. "
+    gzerr << HOMEDIR << " environment variable not found. "
       "Unable to save configuration file\n";
     return;
   }
@@ -2149,8 +2162,19 @@ void MainWindow::OnResponse(ConstResponsePtr &_msg)
 
   if (_msg->has_type() && _msg->type() == sceneMsg.GetTypeName())
   {
-    sceneMsg.ParseFromString(_msg->serialized_data());
+    bool parseResult = sceneMsg.ParseFromString(_msg->serialized_data());
+    this->OnSceneInfo(sceneMsg, parseResult);
+  }
 
+  delete this->dataPtr->requestMsg;
+  this->dataPtr->requestMsg = nullptr;
+}
+
+/////////////////////////////////////////////////
+void MainWindow::OnSceneInfo(const msgs::Scene &sceneMsg, const bool _result)
+{
+  if (_result)
+  {
     for (int i = 0; i < sceneMsg.model_size(); ++i)
     {
       this->dataPtr->entities[sceneMsg.model(i).name()] =
@@ -2176,9 +2200,10 @@ void MainWindow::OnResponse(ConstResponsePtr &_msg)
       gui::Events::lightUpdate(sceneMsg.light(i));
     }
   }
-
-  delete this->dataPtr->requestMsg;
-  this->dataPtr->requestMsg = nullptr;
+  else
+  {
+    gzerr << "Error when requesting scene_info" << std::endl;
+  }
 }
 
 /////////////////////////////////////////////////
